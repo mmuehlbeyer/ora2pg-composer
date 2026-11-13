@@ -2,7 +2,7 @@
 
 Generate an `ora2pg.conf` and example commands for migrating an Oracle database to PostgreSQL with [ora2pg](https://ora2pg.darold.net/).
 
-> This is an unofficial helper tool and is not affiliated with the ora2pg project. ora2pg is developed by Gilles Darold.
+> This is an unofficial helper tool and is not affiliated with the ora2pg project.
 
 Two versions are included:
 
@@ -14,8 +14,6 @@ Two versions are included:
 Open `index.html` in a browser, or upload it to any web server or static host. It is a single file with no build step and no server code. Everything runs in the browser; nothing you enter is sent anywhere.
 
 Use **Copy** or **Download** to get the config, and **Copy commands** for the example commands.
-
-The page loads the IBM Plex fonts from Google Fonts. To avoid that, remove the `<link>` line in the `<head>`; the page then uses system fonts.
 
 ## Terminal script
 
@@ -39,12 +37,8 @@ Press Enter to accept the default shown in brackets. The script writes two files
 - Consistent data snapshot at an Oracle SCN (`--scn`)
 - Truncating target tables before loading (`TRUNCATE_TABLE`)
 
-The web page has a few more options (character set, identifier case, partitions, direct load) and shows notes on settings worth a second look.
 
 ## Passwords
 
-No password is ever stored in the config. Pass the Oracle password with `-w` (the example commands read it with `read -s` so it stays out of your shell history) and the PostgreSQL password with the `PGPASSWORD` environment variable.
+No password is ever stored in the config. Pass the Oracle password with `-w` 
 
-## Before you run a migration
-
-The generated values are starting points, not tuned settings. Review the config, check it against `ora2pg --help` and the documentation for your ora2pg version, and do a test run on a copy of your data first.
