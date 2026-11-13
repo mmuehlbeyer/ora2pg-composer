@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ora2pg config generator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  :root {
+    --bg: #eef1f4; --panel: #ffffff; --ink: #1d2733; --muted: #5b6878;
+    --line: #d3dae2; --accent: #336791; --code-bg: #1f2b38; --code-ink: #e3eaf1; --comment: #8fa3b8;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141b23; --panel: #1c2530; --ink: #e3eaf1; --muted: #9aa8b8;
+      --line: #2e3a48; --accent: #7fb0d9; --code-bg: #0f151c; --code-ink: #e3eaf1; --comment: #7d90a4;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141b23; --panel: #1c2530; --ink: #e3eaf1; --muted: #9aa8b8;
+    --line: #2e3a48; --accent: #7fb0d9; --code-bg: #0f151c; --code-ink: #e3eaf1; --comment: #7d90a4;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .intro { color: var(--muted); margin: 0 0 24px; max-width: 65ch; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 20px; }
+  legend { font-weight: 600; margin-bottom: 8px; color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); }
+  input[type=text], input[type=number], select {
+    width: 100%; margin-top: 3px; padding: 7px 9px; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
+  }
+  .check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 0.95rem; margin-top: 6px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .output { min-width: 0; }
+  .bar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .bar span { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+  button { font: inherit; padding: 7px 14px; border-radius: 5px; border: 1px solid var(--accent); background: var(--accent); color: var(--panel); cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); }
+  pre { margin: 0; background: var(--code-bg); color: var(--code-ink); padding: 16px; border-radius: 8px; overflow: auto; max-height: 60vh; font: 13px/1.55 "IBM Plex Mono", ui-monospace, monospace; }
+  pre .c { color: var(--comment); }
+  .notes { margin-top: 16px; padding-left: 18px; color: var(--muted); font-size: 0.9rem; }
+  .notes li { margin-bottom: 6px; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>ora2pg config generator</h1>
+  <p class="intro">Enter your Oracle database details and get a ready-to-use <code>ora2pg.conf</code> with example commands. Everything runs in your browser, and passwords are never asked for.</p>
+
+  <div class="layout">
+    <form id="f">
+      <fieldset>
+        <legend>Oracle source</legend>
+        <div class="row">
+          <label>Host<input type="text" name="host" value="oracle.example.com"></label>
+          <label>Port<input type="number" name="port" value="1521"></label>
+          <label>Connect using<select name="conn"><option value="service_name">Service name</option><option value="sid">SID</option></select></label>
+          <label>Service name or SID<input type="text" name="service" value="ORCLPDB1"></label>
+          <label>User<input type="text" name="user" value="system"></label>
+          <label>Schema to migrate<input type="text" name="schema" value="HR"></label>
+          <label>Oracle version<select name="oraver"><option>11g</option><option>12c</option><option>18c</option><option selected>19c</option><option>21c</option><option>23ai</option></select></label>
+          <label>Character set<select name="charset"><option>AL32UTF8</option><option>WE8MSWIN1252</option><option>WE8ISO8859P1</option><option>WE8ISO8859P15</option></select></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>What the data looks like</legend>
+        <div class="row">
+          <label>Total data size<select name="size"><option value="s">Under 10 GB</option><option value="m">10 to 100 GB</option><option value="l">100 GB to 1 TB</option><option value="xl">Over 1 TB</option></select></label>
+          <label>CPU cores on the migration host<input type="number" name="cores" value="4" min="1"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="lobs"> Has BLOB, CLOB or LONG columns</label>
+        <label class="check"><input type="checkbox" name="blobLo"> Export BLOBs as PostgreSQL large objects (--blob_to_lo)</label>
+        <label class="check"><input type="checkbox" name="numbers"> Has NUMBER columns without precision</label>
+        <label class="check"><input type="checkbox" name="parts"> Has partitioned tables</label>
+        <label class="check"><input type="checkbox" name="keepcase"> Keep Oracle’s identifier case</label>
+        <label style="margin-top:10px">Only these tables (space separated, regex allowed, empty means all)<input type="text" name="allow" placeholder="EMPLOYEES DEPT_.*"></label>
+        <label style="margin-top:10px">Tables to skip (space separated, regex allowed)<input type="text" name="exclude" placeholder="TMP_.* AUDIT_LOG"></label>
+        <label style="margin-top:10px">Export data as of SCN (optional, for COPY or INSERT)<input type="text" name="scn" inputmode="numeric" placeholder="e.g. 48291736"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>PostgreSQL target</legend>
+        <div class="row">
+          <label>PostgreSQL version<select name="pgver"><option>13</option><option>14</option><option>15</option><option selected>16</option><option>17</option></select></label>
+          <label>What to export<select name="type">
+            <option value="TABLE">Tables and constraints</option>
+            <option value="SEQUENCE">Sequences</option>
+            <option value="VIEW">Views</option>
+            <option value="PACKAGE,PROCEDURE,FUNCTION">PL/SQL code</option>
+            <option value="TRIGGER">Triggers</option>
+            <option value="COPY">Data (COPY)</option>
+            <option value="INSERT">Data (INSERT)</option>
+          </select></label>
+          <label>Output<select name="out"><option value="file">Write SQL files</option><option value="direct">Load directly into PostgreSQL</option></select></label>
+          <label>PostgreSQL database (direct load)<input type="text" name="pgdb" value="appdb"></label>
+          <label>PostgreSQL host (direct load)<input type="text" name="pghost" value="localhost"></label>
+          <label>PostgreSQL user (direct load)<input type="text" name="pguser" value="postgres"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="truncate"> Truncate target tables before loading data</label>
+      </fieldset>
+    </form>
+
+    <section class="output">
+      <div class="bar">
+        <button type="button" id="copy">Copy</button>
+        <button type="button" id="save" class="secondary">Download</button>
+        <span id="status"></span>
+      </div>
+      <pre id="conf"></pre>
+      <ul class="notes" id="notes"></ul>
+      <div class="bar" style="margin-top:20px">
+        <strong>Example commands</strong>
+        <button type="button" id="copycmd" class="secondary" style="margin-left:auto">Copy commands</button>
+      </div>
+      <pre id="cmd"></pre>
+    </section>
+  </div>
+  <footer>
+    Unofficial config generator for ora2pg, not affiliated with the ora2pg project.
+    ora2pg is developed by Gilles Darold: <a href="https://ora2pg.darold.net/">ora2pg.darold.net</a>.
+    Always review the generated config before running a migration.
+  </footer>
+</main>
+
+<script>
+const form = document.getElementById("f");
+let configText = "";
+
+function build(v) {
+  const lines = [];
+  const notes = [];
+  const add = (key, value, why) => {
+    if (why) lines.push("# " + why);
+    lines.push(key.padEnd(20) + " " + value);
+  };
+  const gap = (title) => lines.push("", "#--- " + title);
+  const cores = Math.max(1, parseInt(v.cores) || 1);
+  const isData = v.type === "COPY" || v.type === "INSERT";
+
+  lines.push("# ora2pg.conf generated for schema " + v.schema + " (Oracle " + v.oraver + " to PostgreSQL " + v.pgver + ")");
+
+  gap("Oracle connection");
+  add("ORACLE_DSN", "dbi:Oracle:host=" + v.host + ";" + v.conn + "=" + v.service + ";port=" + v.port);
+  add("ORACLE_USER", v.user);
+  lines.push("# ORACLE_PWD          (left out on purpose: run ora2pg with -w 'password')");
+  add("SCHEMA", v.schema.toUpperCase());
+  add("EXPORT_SCHEMA", "1", "Create the schema in PostgreSQL and set search_path to it");
+
+  gap("Encoding");
+  add("NLS_LANG", "AMERICAN_AMERICA.AL32UTF8", "Oracle converts from " + v.charset + " to UTF-8 on the client side");
+  add("CLIENT_ENCODING", "UTF8");
+  if (v.charset !== "AL32UTF8") {
+    notes.push("Your source uses " + v.charset + ", a single-byte charset. Accented characters take 2 bytes in UTF-8, so check VARCHAR columns that are defined in bytes and filled to the limit.");
+  }
+
+  gap("Target");
+  add("PG_VERSION", v.pgver);
+  add("TYPE", v.type);
+  if (v.allow.trim()) add("ALLOW", v.allow.trim(), "Export only these objects");
+  if (v.exclude.trim()) add("EXCLUDE", v.exclude.trim(), "Skipped objects");
+  if (v.allow.trim() && v.exclude.trim()) notes.push("You set both an include and a skip list. Run ora2pg -t SHOW_TABLE to check the final table list before exporting.");
+  if (v.parts) {
+    notes.push("Partitioned tables will be exported as PostgreSQL declarative partitions. Review them with TYPE PARTITION before loading data.");
+  }
+
+  gap("Data types and naming");
+  if (v.numbers) {
+    add("PG_NUMERIC_TYPE", "1", "Map NUMBER(p,s) to real PostgreSQL types where it is safe");
+    add("PG_INTEGER_TYPE", "1");
+    add("DEFAULT_NUMERIC", "numeric", "NUMBER without precision can hold decimals, so bigint would lose data");
+    notes.push("Unconstrained NUMBER becomes numeric. If you know a column only holds integers, add it to MODIFY_TYPE as bigint for better performance.");
+  } else {
+    add("PG_NUMERIC_TYPE", "1");
+    add("PG_INTEGER_TYPE", "1");
+    add("DEFAULT_NUMERIC", "bigint");
+  }
+  if (v.keepcase) {
+    add("PRESERVE_CASE", "1", "Keep Oracle case: names will need double quotes in every query");
+    notes.push("With PRESERVE_CASE 1, uppercase names like EMPLOYEES must be written as \"EMPLOYEES\" in all PostgreSQL queries. Most migrations leave this off.");
+  } else {
+    add("PRESERVE_CASE", "0", "Lowercase all names, the PostgreSQL convention");
+  }
+
+  gap("Performance");
+  let tables = 1, copies = 1, jobs = Math.min(2, cores), limit = 10000;
+  if (v.size === "m") { tables = Math.max(1, Math.floor(cores / 4)); jobs = 2; }
+  if (v.size === "l" || v.size === "xl") { tables = Math.max(1, Math.floor(cores / 4)); copies = 2; jobs = 2; limit = 20000; }
+  if (v.lobs) limit = v.size === "s" ? 1000 : 500;
+  add("PARALLEL_TABLES", tables, "Tables exported at the same time");
+  add("ORACLE_COPIES", copies, "Oracle connections per table");
+  add("JOBS", jobs, "Processes writing into PostgreSQL");
+  add("DATA_LIMIT", limit, v.lobs ? "Rows per batch, kept low because LOB rows are large" : "Rows fetched per batch");
+  if (v.lobs) {
+    add("BLOB_LIMIT", "100", "Rows per batch for tables with BLOB columns");
+    add("LONGREADLEN", "10485760", "Max LOB size read, 10 MB. Raise it if your LOBs are bigger");
+  }
+  if (copies > 1) notes.push("ORACLE_COPIES above 1 splits each table on a numeric unique key. Tables without one fall back to a single connection; set DEFINED_PK to name the key yourself.");
+  if (tables * (copies + jobs) > cores * 2) notes.push("These settings start more processes than your core count suggests. Lower PARALLEL_TABLES if the host struggles.");
+  if (v.size === "l" || v.size === "xl") notes.push("For a database this size, run ora2pg -t SHOW_REPORT --estimate_cost first to see which objects will need manual work.");
+
+  gap("Output");
+  if (v.out === "direct") {
+    add("PG_DSN", "dbi:Pg:dbname=" + v.pgdb + ";host=" + v.pghost + ";port=5432", "Load straight into PostgreSQL");
+    add("PG_USER", v.pguser);
+    lines.push("# PG_PWD              (left out on purpose: set the PGPASSWORD environment variable)");
+  } else {
+    add("OUTPUT_DIR", "./output");
+    add("OUTPUT", v.type.split(",")[0].toLowerCase() + ".sql");
+    if (isData) add("FILE_PER_TABLE", "1", "One data file per table, easier to rerun one table");
+  }
+  if (isData) {
+    add("DISABLE_TRIGGERS", "1", "Skip triggers while loading data");
+    if (v.truncate) {
+      add("TRUNCATE_TABLE", "1", "Empty each target table before loading, so reruns don't duplicate rows");
+      notes.push("TRUNCATE_TABLE 1 deletes all existing rows in the target tables. If other tables reference them by foreign key, the truncate can fail; DEFER_FKEY or DROP_FKEY can help.");
+    }
+  } else if (v.out === "direct") {
+    notes.push("Direct load is mostly useful for data. For schema objects, writing files lets you review the SQL before running it.");
+  }
+  if (v.truncate && !isData) {
+    notes.push("Truncating only applies to data exports (COPY or INSERT), so it is left out for this export type.");
+  }
+
+  const scn = v.scn.trim();
+  if (v.blobLo && !v.lobs) {
+    notes.push("Large object export only matters when the database has BLOB columns. Tick that box too, or the option is ignored.");
+  } else if (v.blobLo && v.type === "COPY") {
+    notes.push("--blob_to_lo works with INSERT, not COPY. Switch to Data (INSERT) to export BLOBs as large objects.");
+  }
+  if (scn && !isData) {
+    notes.push("The SCN only applies to data exports (COPY or INSERT), so it is ignored for this export type.");
+  } else if (scn && !/^\d+$/.test(scn)) {
+    notes.push("The SCN should be a number, as returned by SELECT CURRENT_SCN FROM V$DATABASE.");
+  } else if (scn) {
+    notes.push("Exporting as of an SCN uses Oracle flashback queries. The export user needs FLASHBACK privilege on the tables, and undo retention must cover the whole export, or long tables fail with ORA-01555.");
+  }
+
+  return { text: lines.join("\n") + "\n", notes };
+}
+
+function buildCommands(v) {
+  const pw = "-w \"$ORACLE_PWD\"";
+  const out = [];
+  out.push("# Keep the Oracle password out of your shell history");
+  out.push("read -s -p \"Oracle password: \" ORACLE_PWD");
+  out.push("", "# 1. Check that ora2pg can reach Oracle");
+  out.push("ora2pg -c ora2pg.conf -t SHOW_VERSION " + pw);
+  out.push("", "# 2. List the tables this config will export");
+  out.push("ora2pg -c ora2pg.conf -t SHOW_TABLE " + pw);
+  if (v.size === "l" || v.size === "xl") {
+    out.push("", "# 3. Estimate how much manual work the migration needs");
+    out.push("ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost " + pw + " > report.txt");
+  }
+  const isData = v.type === "COPY" || v.type === "INSERT";
+  const scn = v.scn.trim();
+  const lo = v.lobs && v.blobLo;
+  const loOk = v.type === "TABLE" || v.type === "INSERT";
+  const flags = (isData && scn ? " --scn " + scn : "") + (lo && loOk ? " --blob_to_lo" : "");
+  out.push("", "# Run the export set in the config (" + v.type + ")");
+  if (v.out === "direct") {
+    out.push("export PGPASSWORD='your-postgres-password'");
+    out.push("ora2pg -c ora2pg.conf " + pw + flags);
+  } else {
+    const file = v.type.split(",")[0].toLowerCase() + ".sql";
+    out.push("ora2pg -c ora2pg.conf " + pw + flags);
+    out.push("", "# Review the SQL, then load it");
+    out.push("psql -h " + v.pghost + " -U " + v.pguser + " -d " + v.pgdb + " -f output/" + file);
+  }
+  if (lo) {
+    out.push("", "# BLOBs as large objects (--blob_to_lo works with SHOW_COLUMN, TABLE and INSERT, not COPY)");
+    out.push("# Preview the column types: BLOB columns become oid");
+    out.push("ora2pg -c ora2pg.conf -t SHOW_COLUMN --blob_to_lo " + pw);
+    out.push("# Table definitions with oid columns");
+    out.push("ora2pg -c ora2pg.conf -t TABLE --blob_to_lo -o table.sql " + pw);
+    out.push("# Data, with BLOBs loaded as large objects");
+    out.push("ora2pg -c ora2pg.conf -t INSERT --blob_to_lo -o data.sql " + pw);
+  }
+  out.push("", "# Consistent data snapshot with --scn (COPY or INSERT only)");
+  out.push("# Get the current SCN in SQL*Plus: SELECT CURRENT_SCN FROM V$DATABASE;");
+  out.push("ora2pg -c ora2pg.conf -t " + (lo ? "INSERT --blob_to_lo" : "COPY") + " --scn " + (scn || "<SCN>") + " -o data.sql " + pw);
+  out.push("", "# Run another export type without editing the file, e.g. sequences");
+  out.push("ora2pg -c ora2pg.conf -t SEQUENCE -o sequence.sql " + pw);
+  return out.join("\n") + "\n";
+}
+let commandText = "";
+
+function showCode(id, text) {
+  const pre = document.getElementById(id);
+  pre.textContent = "";
+  text.split("\n").forEach(line => {
+    const span = document.createElement("span");
+    if (line.startsWith("#")) span.className = "c";
+    span.textContent = line + "\n";
+    pre.appendChild(span);
+  });
+}
+
+function render() {
+  const data = new FormData(form);
+  const v = Object.fromEntries(data.entries());
+  ["lobs", "blobLo", "numbers", "parts", "keepcase", "truncate"].forEach(k => v[k] = data.has(k));
+  const { text, notes } = build(v);
+  configText = text;
+  commandText = buildCommands(v);
+  showCode("conf", configText);
+  showCode("cmd", commandText);
+
+  const list = document.getElementById("notes");
+  list.textContent = "";
+  notes.forEach(n => {
+    const li = document.createElement("li");
+    li.textContent = n;
+    list.appendChild(li);
+  });
+}
+
+function status(msg) {
+  const s = document.getElementById("status");
+  s.textContent = msg;
+  setTimeout(() => { if (s.textContent === msg) s.textContent = ""; }, 2500);
+}
+
+async function copy(text, preId) {
+  try {
+    await navigator.clipboard.writeText(text);
+    status("Copied");
+  } catch (e) {
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById(preId));
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    status("Selected, press Ctrl+C to copy");
+  }
+}
+document.getElementById("copy").addEventListener("click", () => copy(configText, "conf"));
+document.getElementById("copycmd").addEventListener("click", () => copy(commandText, "cmd"));
+
+// Download the config as ora2pg.conf
+document.getElementById("save").addEventListener("click", () => {
+  const blob = new Blob([configText], { type: "text/plain" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "ora2pg.conf";
+  link.click();
+  URL.revokeObjectURL(link.href);
+});
+
+form.addEventListener("input", render);
+render();
+</script>
+</body>
+</html>
