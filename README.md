@@ -1,4 +1,4 @@
-# ora2pg config generator
+# ora2pg composer
 
 Generate an `ora2pg.conf` and example commands for migrating an Oracle database to PostgreSQL with [ora2pg](https://ora2pg.darold.net/).
 
@@ -18,7 +18,7 @@ Use **Copy** or **Download** to get the config, and **Copy commands** for the ex
 ## Terminal script
 
 ```
-ora2pg_config.sh
+ora2pg_composer.sh
 ```
 
 Press Enter to accept the default shown in brackets. The script writes two files to the current folder:
