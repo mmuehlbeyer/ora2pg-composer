@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Answer a few questions, get ora2pg.conf and example commands.
-# Usage: bash ora2pg_config.sh
+# Usage: bash ora2pg_composer.sh
 
 ask() { local a; read -r -p "$1 [$2]: " a; echo "${a:-$2}"; }
 yes() { local a; read -r -p "$1 (y/N): " a; [[ $a == [yY]* ]]; }
