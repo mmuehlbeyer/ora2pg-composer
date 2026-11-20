@@ -11,7 +11,7 @@ port=$(ask "Oracle port" "1521")
 service=$(ask "Oracle service name" "ORCLPDB1")
 user=$(ask "Oracle user" "system")
 schema=$(ask "Schema" "HR"); schema=$(echo "$schema" | tr a-z A-Z)
-pg_version=$(ask "PostgreSQL version" "16")
+pg_version=$(ask "PostgreSQL version" "18")
 type=$(ask "Export type (TABLE, SEQUENCE, VIEW, COPY, INSERT)" "TABLE"); type=$(echo "$type" | tr a-z A-Z)
 size_gb=$(ask "Data size in GB" "10")
 lobs=0; blob_to_lo=0; numbers=0; truncate=0; scn=""
@@ -25,7 +25,7 @@ if [[ $is_data == 1 ]]; then
   scn=$(ask "Export as of SCN (empty = none)" "")
   yes "Truncate target tables before loading?" && truncate=1
 fi
-pg_db=$(ask "PostgreSQL database" "appdb")
+pg_db=$(ask "PostgreSQL database" "postgres")
 pg_host=$(ask "PostgreSQL host" "localhost")
 pg_user=$(ask "PostgreSQL user" "postgres")
 
