@@ -4,6 +4,7 @@ Generate an `ora2pg.conf` and example commands for migrating an Oracle database 
 
 This is an unofficial helper tool and is not affiliated with the ora2pg project.
 
+
 2 versions are available
 
 - **Web page** (`index.html`): fill in a form and the config updates as you type.
